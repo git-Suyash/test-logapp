@@ -1,0 +1,128 @@
+{
+  "title": "Ingested Logs Explorer",
+  "uid": "logapp-ingested-logs",
+  "description": "Explore logs ingested from external services (JSON, NGINX, AppEvolve, Agentic). Excludes logApp's own runtime logs.",
+  "tags": ["logapp", "ingested"],
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "label_values({type=~\"JSON|NGINX|APPEVOLVE|AGENTIC\"}, service)",
+        "query": "label_values({type=~\"JSON|NGINX|APPEVOLVE|AGENTIC\"}, service)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".+",
+        "multi": false,
+        "sort": 1,
+        "hide": 0
+      },
+      {
+        "name": "level",
+        "label": "Log Level",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "label_values({type=~\"JSON|NGINX|APPEVOLVE|AGENTIC\"}, level)",
+        "query": "label_values({type=~\"JSON|NGINX|APPEVOLVE|AGENTIC\"}, level)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".+",
+        "multi": false,
+        "sort": 1,
+        "hide": 0
+      },
+      {
+        "name": "log_type",
+        "label": "Log Type",
+        "type": "custom",
+        "query": "JSON,NGINX,APPEVOLVE,AGENTIC",
+        "options": [
+          { "text": "All", "value": "JSON|NGINX|APPEVOLVE|AGENTIC", "selected": true },
+          { "text": "JSON", "value": "JSON", "selected": false },
+          { "text": "NGINX", "value": "NGINX", "selected": false },
+          { "text": "APPEVOLVE", "value": "APPEVOLVE", "selected": false },
+          { "text": "AGENTIC", "value": "AGENTIC", "selected": false }
+        ],
+        "includeAll": false,
+        "multi": false,
+        "hide": 0,
+        "current": { "text": "All", "value": "JSON|NGINX|APPEVOLVE|AGENTIC" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Log Volume by Type",
+      "type": "timeseries",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (type) (count_over_time({type=~\"$log_type\", service=~\"$service\"}[1m]))",
+          "legendFormat": "{{type}}",
+          "refId": "A"
+        }
+      ],
+      "options": { "tooltip": { "mode": "multi" } },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Log Volume by Service",
+      "type": "timeseries",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (service) (count_over_time({type=~\"$log_type\", service=~\"$service\"}[1m]))",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "options": { "tooltip": { "mode": "multi" } },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Ingested Logs",
+      "type": "logs",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 17, "w": 24, "x": 0, "y": 7 },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{type=~\"$log_type\", service=~\"$service\", level=~\"$level\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    }
+  ],
+  "links": [
+    { "title": "Pipeline Health", "url": "/d/logapp-pipeline-health", "type": "link" },
+    { "title": "Error Rates", "url": "/d/logapp-error-rates", "type": "link" }
+  ]
+}

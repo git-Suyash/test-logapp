@@ -1,0 +1,49 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_server_max_recv_msg_size: 33554432
+  grpc_server_max_send_msg_size: 33554432
+
+# Run single-node dev ring (no Consul) so Loki doesn't try to contact localhost:8500
+
+common:
+  path_prefix: /tmp/loki
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2026-01-01
+      store: boltdb-shipper
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /tmp/loki/index
+    cache_location: /tmp/loki/cache
+
+  # Moved here and properly indented under storage_config
+  filesystem:
+    directory: /tmp/loki/chunks
+
+ingester:
+  max_chunk_age: 48h
+
+limits_config:
+  allow_structured_metadata: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 365d
+  ingestion_rate_mb: 32
+  ingestion_burst_size_mb: 64
+  unordered_writes: true
+  max_line_size: 4MB
+  max_line_size_truncate: true
+  per_stream_rate_limit: 32MB
+  per_stream_rate_limit_burst: 64MB

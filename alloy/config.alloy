@@ -1,0 +1,91 @@
+logging {
+  level = "debug"
+}
+///////////////////////////////////////////////////////
+///////////////////// LOGS ////////////////////////////
+///////////////////////////////////////////////////////
+local.file_match "logapp_logs" {
+  path_targets = [
+    {
+      __path__    = "/var/log/logapp/*.log",
+      job         = "logapp",
+      service     = "logApp",
+      environment = "development",
+    },
+  ]
+}
+loki.source.file "logapp_files" {
+  targets    = local.file_match.logapp_logs.targets
+  forward_to = [loki.process.add_labels.receiver]
+}
+loki.process "add_labels" {
+  stage.static_labels {
+    values = {
+      source    = "runtime_logs",
+      collector = "alloy",
+    }
+  }
+  forward_to = [loki.write.local.receiver]
+}
+loki.write "local" {
+  endpoint {
+    url = "http://host.docker.internal:3100/loki/api/v1/push"
+  }
+}
+///////////////////////////////////////////////////////
+////////////////... METRICS ///////////////////////////
+///////////////////////////////////////////////////////
+prometheus.scrape "logapp_metrics" {
+  targets = [
+    {
+      __address__ = "host.docker.internal:8000",
+    },
+  ]
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "5s"
+  scrape_timeout  = "5s"
+}
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://host.docker.internal:9090/api/v1/write"
+  }
+}
+///////////////////////////////////////////////////////
+//////////////////// TRACES ///////////////////////////
+///////////////////////////////////////////////////////
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    // FIXED: Now correctly forwards to the batch processor
+    traces = [otelcol.processor.batch.default.input]
+  }
+}
+otelcol.processor.batch "default" {
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+otelcol.exporter.otlp "tempo" {
+  client {
+    // FIXED: Tempo's OTLP gRPC (container 4317) is published on host port 4319
+    endpoint = "host.docker.internal:4319"
+    tls {
+      insecure = true
+    }
+  }
+}
+///////////////////////////////////////////////////////
+//////////////// ALLOY SELF MONITORING ////////////////
+///////////////////////////////////////////////////////
+prometheus.exporter.self "alloy" {}
+prometheus.scrape "alloy_metrics" {
+  targets         = prometheus.exporter.self.alloy.targets
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "5s"
+  scrape_timeout  = "5s"
+}

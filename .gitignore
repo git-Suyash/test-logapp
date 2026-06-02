@@ -1,0 +1,54 @@
+```gitignore id="a8xpmv"
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual Environment
+.venv/
+venv/
+
+# Environment Variables
+.env
+.env.*
+# Runtime Logs
+runtime_logs/
+*.log
+
+# Data
+data/checkpoints/
+data/dead_letter/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Docker
+*.pid
+
+# Grafana
+grafana/data/
+
+# Temporary
+tmp/
+temp/
+```
+.claude

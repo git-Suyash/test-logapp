@@ -8,7 +8,7 @@ server:
 # Run single-node dev ring (no Consul) so Loki doesn't try to contact localhost:8500
 
 common:
-  path_prefix: /tmp/loki
+  path_prefix: /loki
   replication_factor: 1
   ring:
     kvstore:
@@ -26,12 +26,11 @@ schema_config:
 
 storage_config:
   boltdb_shipper:
-    active_index_directory: /tmp/loki/index
-    cache_location: /tmp/loki/cache
+    active_index_directory: /loki/index
+    cache_location: /loki/cache
 
-  # Moved here and properly indented under storage_config
   filesystem:
-    directory: /tmp/loki/chunks
+    directory: /loki/chunks
 
 ingester:
   max_chunk_age: 48h
